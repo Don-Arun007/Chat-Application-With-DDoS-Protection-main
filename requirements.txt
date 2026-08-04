@@ -1,0 +1,12 @@
+Django>=4.2,<5.0
+channels>=4.0.0
+daphne>=4.0.0
+channels-redis>=4.1.0
+django-crispy-forms>=2.0
+crispy-bootstrap4>=2.0
+Pillow>=10.0.0
+psycopg2-binary>=2.9.6
+gunicorn>=21.2.0
+whitenoise>=6.5.0
+redis>=4.6.0
+dj-database-url>=2.0.0

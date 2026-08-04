@@ -1,0 +1,432 @@
+{% extends 'chat/base.html' %}
+
+{% block title %}Chats - ChatApp{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        overflow: hidden;
+    }
+
+    .chat-container {
+        display: flex;
+        height: calc(100vh - 56px);
+        background-color: #f0f2f5;
+        width: 100%;
+    }
+
+    .sidebar {
+        width: 400px;
+        background-color: white;
+        border-right: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+
+    .sidebar-header {
+        background: linear-gradient(135deg, var(--header-bg) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 1.2rem;
+        font-size: 1.2rem;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        flex-shrink: 0;
+    }
+
+    .search-box {
+        padding: 0.75rem 1rem;
+        background-color: #f6f6f6;
+        border-bottom: 1px solid #ddd;
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 2.5rem;
+        border: none;
+        border-radius: 25px;
+        background-color: white;
+        outline: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .search-box input:focus {
+        box-shadow: 0 2px 8px rgba(7, 94, 84, 0.15);
+        transform: translateY(-1px);
+    }
+
+    .search-box::before {
+        content: '\f002';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        left: 1.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #667781;
+        pointer-events: none;
+    }
+
+    .chat-list {
+        flex: 1;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+    }
+
+    .chat-item {
+        padding: 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+    }
+
+    .chat-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: var(--teal-light);
+        transform: scaleY(0);
+        transition: transform 0.3s ease;
+    }
+
+    .chat-item:hover {
+        background-color: #f5f5f5;
+    }
+
+    .chat-item:hover::before {
+        transform: scaleY(1);
+    }
+
+    .chat-item-info {
+        flex: 1;
+        margin-left: 1rem;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .chat-item-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chat-item-message {
+        color: #667781;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chat-item-time {
+        color: #667781;
+        font-size: 0.8rem;
+        align-self: flex-start;
+        white-space: nowrap;
+        margin-left: 0.5rem;
+    }
+
+    .main-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #f0f2f5 0%, #e6e9ef 100%);
+        position: relative;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: #667781;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .empty-state i {
+        font-size: 5rem;
+        margin-bottom: 1rem;
+        color: #d9d9d9;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .empty-state h3 {
+        color: #333;
+        margin-bottom: 0.5rem;
+    }
+
+    .users-section {
+        background-color: #f8f9fa;
+        padding: 0.5rem 0;
+    }
+
+    .users-title {
+        font-weight: 600;
+        color: #667781;
+        font-size: 0.85rem;
+        padding: 0.75rem 1rem;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .user-item {
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        color: inherit;
+        background-color: white;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .user-item:hover {
+        background-color: #f5f5f5;
+        transform: translateX(5px);
+    }
+
+    .user-info {
+        flex: 1;
+        margin-left: 0.75rem;
+    }
+
+    .user-name {
+        font-weight: 500;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .user-bio {
+        font-size: 0.85rem;
+        color: #667781;
+    }
+
+    .no-results {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #667781;
+        display: none;
+    }
+
+    .no-results.active {
+        display: block;
+    }
+
+    .no-results i {
+        font-size: 3rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            width: 100%;
+        }
+
+        .main-content {
+            display: none;
+        }
+    }
+
+    .chat-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chat-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .chat-list::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .chat-list::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-comments"></i> Chats
+        </div>
+        
+        <div class="search-box">
+            <input type="text" placeholder="Search or start new chat" id="searchInput" autocomplete="off">
+        </div>
+
+        <div class="chat-list" id="chatList">
+            {% if chats %}
+                {% for chat in chats %}
+                    <a href="{% url 'chat_room' chat.other_user.username %}" class="chat-item">
+                        <img src="https://ui-avatars.com/api/?name={{ chat.other_user.username }}&background=075e54&color=fff" 
+                             alt="{{ chat.other_user.username }}" 
+                             class="avatar"
+                             loading="lazy">
+                        <div class="chat-item-info">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="chat-item-name">
+                                    {{ chat.other_user.username }}
+                                    {% if chat.other_user.profile.online %}
+                                        <span class="online-status"></span>
+                                    {% endif %}
+                                </div>
+                                {% if chat.last_message %}
+                                    <div class="chat-item-time">
+                                        {{ chat.last_message.timestamp|date:"H:i" }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="chat-item-message">
+                                {% if chat.last_message %}
+                                    {% if chat.last_message.sender == user %}
+                                        <i class="fas fa-check"></i> You: 
+                                    {% endif %}
+                                    {{ chat.last_message.content|truncatewords:7 }}
+                                {% else %}
+                                    <span style="color: #999; font-style: italic;">Start a conversation</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            {% endif %}
+
+            <div class="users-section">
+                <div class="users-title">
+                    <i class="fas fa-users"></i> All Users
+                </div>
+                {% if users %}
+                    {% for user_item in users %}
+                        <a href="{% url 'start_chat' user_item.id %}" class="user-item">
+                            <img src="https://ui-avatars.com/api/?name={{ user_item.username }}&background=667eea&color=fff" 
+                                 alt="{{ user_item.username }}" 
+                                 class="avatar avatar-sm"
+                                 loading="lazy">
+                            <div class="user-info">
+                                <div class="user-name">
+                                    {{ user_item.username }}
+                                    {% if user_item.profile.online %}
+                                        <span class="online-status"></span>
+                                    {% else %}
+                                        <span class="online-status offline-status"></span>
+                                    {% endif %}
+                                </div>
+                                {% if user_item.profile.bio %}
+                                    <div class="user-bio">{{ user_item.profile.bio|truncatewords:8 }}</div>
+                                {% else %}
+                                    <div class="user-bio" style="color: #999;">Click to start chatting</div>
+                                {% endif %}
+                            </div>
+                        </a>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 2rem; text-align: center; color: #667781;">
+                        <i class="fas fa-user-friends" style="font-size: 3rem; opacity: 0.3; margin-bottom: 1rem;"></i>
+                        <p>No other users yet</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="no-results" id="noResults">
+                <i class="fas fa-search"></i>
+                <p>No chats or users found</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="empty-state">
+            <i class="fas fa-comment-dots"></i>
+            <h3>Computer Networks Project</h3>
+            <p>Select a chat to start messaging</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const chatList = document.getElementById('chatList');
+    const noResults = document.getElementById('noResults');
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const chatItems = chatList.querySelectorAll('.chat-item, .user-item');
+        const usersSection = chatList.querySelector('.users-section');
+        let hasResults = false;
+
+        chatItems.forEach(item => {
+            const nameElement = item.querySelector('.chat-item-name, .user-name');
+            if (nameElement) {
+                const username = nameElement.textContent.toLowerCase();
+                if (username.includes(searchTerm) || searchTerm === '') {
+                    item.style.display = 'flex';
+                    hasResults = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+
+        if (usersSection) {
+            const visibleUsers = Array.from(chatList.querySelectorAll('.user-item'))
+                .filter(item => item.style.display !== 'none');
+            
+            if (visibleUsers.length === 0) {
+                usersSection.style.display = 'none';
+            } else {
+                usersSection.style.display = 'block';
+            }
+        }
+
+        if (searchTerm && !hasResults) {
+            noResults.classList.add('active');
+        } else {
+            noResults.classList.remove('active');
+        }
+    });
+
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            this.dispatchEvent(new Event('input'));
+            this.blur();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+</script>
+{% endblock %}
